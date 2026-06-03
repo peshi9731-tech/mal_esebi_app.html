@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1f5c3d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mal Esebi — учёт скота</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Mal Esebi","short_name":"Mal Esebi","start_url":".","display":"standalone","background_color":"%23faf6ee","theme_color":"%231f5c3d","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2722%27 fill=%27%231f5c3d%27/%3E%3Ctext y=%2772%27 x=%2750%27 font-size=%2756%27 text-anchor=%27middle%27%3E%F0%9F%90%84%3C/text%3E%3C/svg%3E","sizes":"any","type":"image/svg+xml"}]}'>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --green:#1f5c3d;--green-d:#16432c;--green-l:#e7f1ea;--sand:#f3ede1;--sand-d:#e8dfcc;
+    --cream:#faf6ee;--ink:#1c1b17;--muted:#71705f;--line:#ddd5c5;--amber:#c87a1a;--amber-l:#fbeed6;
+    --red:#b8401f;--red-l:#f7e2da;--blue:#2b5f8a;--blue-l:#e0ebf3;--white:#fff;
+  }
+  html,body{height:100%}
+  body{font-family:'Manrope',sans-serif;background:var(--cream);color:var(--ink);max-width:480px;margin:0 auto;position:relative;min-height:100vh;overflow-x:hidden}
+  .app{padding-bottom:92px;min-height:100vh}
+  .screen{display:none;animation:fade .2s}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:.4}to{opacity:1}}
+
+  /* TOP BAR */
+  .topbar{padding:max(38px,env(safe-area-inset-top)) 20px 16px;background:linear-gradient(160deg,var(--green),var(--green-d));color:#fff;position:relative}
+  .topbar.sand{background:var(--cream);color:var(--ink);border-bottom:1px solid var(--line)}
+  .topbar-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .topbar h2{font-family:'Fraunces',serif;font-size:23px;font-weight:600}
+  .topbar.sand h2{color:var(--ink)}
+  .topbar .sub{font-size:12px;opacity:.82;margin-top:2px}
+  .lang-toggle{display:flex;background:rgba(255,255,255,.18);border-radius:20px;padding:2px;flex-shrink:0}
+  .topbar.sand .lang-toggle{background:var(--sand-d)}
+  .lang-btn{border:none;background:transparent;color:#fff;font-family:inherit;font-size:11px;font-weight:700;padding:5px 11px;border-radius:18px;cursor:pointer;transition:.2s}
+  .topbar.sand .lang-btn{color:var(--muted)}
+  .lang-btn.on{background:#fff;color:var(--green)}
+  .topbar.sand .lang-btn.on{background:var(--green);color:#fff}
+
+  .stats{display:flex;gap:8px;margin-top:16px}
+  .stat{flex:1;background:rgba(255,255,255,.12);border-radius:14px;padding:10px 12px}
+  .stat .n{font-size:21px;font-weight:800;font-family:'Fraunces',serif}
+  .stat .l{font-size:10px;opacity:.82;margin-top:1px}
+
+  .body{padding:16px 16px 0}
+
+  .seg{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+  .seg::-webkit-scrollbar{height:0}
+  .seg button{flex-shrink:0;border:1px solid var(--line);background:var(--white);font-family:inherit;font-size:12px;font-weight:600;color:var(--muted);padding:7px 14px;border-radius:20px;cursor:pointer;transition:.2s;white-space:nowrap}
+  .seg button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .animal{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center;cursor:pointer;transition:.15s}
+  .animal:active{transform:scale(.98)}
+  .avatar{width:52px;height:52px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--green-l)}
+  .avatar.mrs{background:var(--amber-l)}.avatar.horse{background:var(--blue-l)}.avatar.other{background:var(--sand-d)}
+  .animal-info{flex:1;min-width:0}
+  .animal-info .tag{font-size:11px;color:var(--muted);font-weight:600}
+  .animal-info .name{font-size:15px;font-weight:700;margin:1px 0}
+  .animal-info .meta{font-size:11px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--sand);color:var(--muted)}
+  .chip.ok{background:var(--green-l);color:var(--green)}
+  .chip.due{background:var(--amber-l);color:var(--amber)}
+  .chip.preg{background:var(--blue-l);color:var(--blue)}
+  .chip.sick{background:var(--red-l);color:var(--red)}
+  .arrow{color:var(--line);font-size:22px;flex-shrink:0}
+
+  .fab{position:fixed;bottom:calc(98px + env(safe-area-inset-bottom));right:max(18px,calc(50% - 240px + 18px));z-index:50;width:58px;height:58px;border-radius:18px;border:none;background:var(--amber);color:#fff;font-size:30px;font-weight:300;box-shadow:0 10px 24px -6px rgba(200,122,26,.6);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .fab:active{transform:scale(.92)}
+
+  .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(250,246,238,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 6px calc(16px + env(safe-area-inset-bottom));z-index:60}
+  .nav button{flex:1;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-family:inherit;font-size:10px;font-weight:600;transition:.2s}
+  .nav button .ic{font-size:21px;line-height:1}
+  .nav button.on{color:var(--green)}
+
+  /* DETAIL */
+  .detail-hero{padding:max(38px,env(safe-area-inset-top)) 20px 20px;background:linear-gradient(160deg,var(--green),var(--green-d));color:#fff}
+  .hero-top{display:flex;justify-content:space-between;margin-bottom:14px}
+  .icon-btn{background:rgba(255,255,255,.18);border:none;color:#fff;width:36px;height:36px;border-radius:12px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .detail-hero .big-avatar{width:70px;height:70px;border-radius:20px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:12px}
+  .detail-hero .d-name{font-family:'Fraunces',serif;font-size:24px;font-weight:600}
+  .detail-hero .d-tag{font-size:13px;opacity:.82;margin-top:2px}
+  .d-section{padding:16px}
+  .d-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:4px 0 10px;display:flex;justify-content:space-between;align-items:center}
+  .d-title .add-link{color:var(--green);font-size:12px;font-weight:700;cursor:pointer;text-transform:none;letter-spacing:0}
+  .d-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+  .d-cell{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:11px 13px}
+  .d-cell .k{font-size:10px;color:var(--muted);font-weight:600}
+  .d-cell .v{font-size:16px;font-weight:700;margin-top:2px}
+  .timeline-item{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}
+  .timeline-item:last-child{border:none}
+  .ti-dot{width:32px;height:32px;border-radius:9px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .ti-dot.due{background:var(--amber-l)}.ti-dot.done{background:var(--sand);opacity:.6}
+  .ti-body{flex:1;min-width:0}
+  .ti-body .t{font-size:13px;font-weight:600}
+  .ti-body .d{font-size:11px;color:var(--muted)}
+  .ti-del{background:none;border:none;color:var(--line);font-size:17px;cursor:pointer;padding:4px}
+
+  /* CARE */
+  .care-group{margin-bottom:18px}
+  .care-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .care-label .dot{width:7px;height:7px;border-radius:50%}
+  .care-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:8px;display:flex;gap:12px;align-items:center}
+  .care-card.urgent{border-color:var(--amber);background:var(--amber-l)}
+  .care-ic{width:40px;height:40px;border-radius:12px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .care-ic.urgent{background:#fff}
+  .care-cbody{flex:1;min-width:0}
+  .care-cbody .ct{font-size:14px;font-weight:700}
+  .care-cbody .cs{font-size:11px;color:var(--muted);margin-top:1px}
+  .care-date{text-align:right;flex-shrink:0}
+  .care-date .cd{font-size:14px;font-weight:700}
+  .care-date .cm{font-size:10px;color:var(--muted)}
+  .care-done-btn{background:var(--green);border:none;color:#fff;border-radius:9px;width:30px;height:30px;font-size:15px;cursor:pointer;flex-shrink:0}
+
+  /* CALC */
+  .calc-field{margin-bottom:14px}
+  .calc-field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px}
+  .calc-row{display:flex;align-items:center;gap:10px}
+  .calc-row input[type=range]{flex:1;accent-color:var(--green)}
+  .calc-val{font-size:15px;font-weight:800;color:var(--green);font-family:'Fraunces',serif;min-width:76px;text-align:right}
+  .seg-mini{display:flex;gap:6px}
+  .seg-mini button{flex:1;border:1px solid var(--line);background:var(--white);font-family:inherit;font-size:12px;font-weight:600;color:var(--muted);padding:9px;border-radius:12px;cursor:pointer}
+  .seg-mini button.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .calc-result{background:var(--ink);color:#fff;border-radius:20px;padding:18px;margin-top:18px}
+  .calc-result .crt{font-size:11px;opacity:.7;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .calc-result .crbig{font-family:'Fraunces',serif;font-size:30px;font-weight:700;margin:4px 0 14px}
+  .calc-line{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.14);font-size:13px}
+  .calc-line .cl-v{font-weight:700}
+  .calc-line.green .cl-v{color:#7ed4a0}
+
+  /* MORE */
+  .more-item{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:9px;display:flex;gap:13px;align-items:center;cursor:pointer}
+  .more-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .more-body{flex:1}
+  .more-body .mt{font-size:14px;font-weight:700}
+  .more-body .ms{font-size:11px;color:var(--muted);margin-top:1px}
+  .soon{font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--sand);color:var(--muted)}
+
+  /* SHEET */
+  .sheet-mask{position:fixed;inset:0;background:rgba(28,27,23,.45);z-index:200;display:none;align-items:flex-end;justify-content:center}
+  .sheet-mask.show{display:flex}
+  .sheet{background:var(--cream);width:100%;max-width:480px;border-radius:26px 26px 0 0;padding:10px 18px calc(28px + env(safe-area-inset-bottom));max-height:92vh;overflow-y:auto;animation:up .28s cubic-bezier(.2,.8,.2,1)}
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .grab{width:40px;height:4px;background:var(--line);border-radius:4px;margin:0 auto 16px}
+  .sheet h3{font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin-bottom:4px}
+  .sheet .sh-sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+  .field{margin-bottom:14px}
+  .field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:13px;padding:12px 14px;font-family:inherit;font-size:15px;color:var(--ink)}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green)}
+  .field-row{display:flex;gap:10px}.field-row>*{flex:1}
+  .type-pick{display:flex;gap:8px;flex-wrap:wrap}
+  .type-pick button{flex:1;min-width:70px;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 6px;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted)}
+  .type-pick button.on{border-color:var(--green);background:var(--green-l);color:var(--green)}
+  .type-pick button .te{font-size:24px}
+  .save-btn{width:100%;background:var(--green);color:#fff;border:none;border-radius:15px;padding:15px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px}
+  .save-btn:active{transform:scale(.98)}
+  .ghost-btn{width:100%;background:transparent;color:var(--red);border:1px solid var(--red-l);border-radius:15px;padding:13px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px}
+
+  .empty{text-align:center;padding:46px 20px;color:var(--muted)}
+  .empty .ee{font-size:42px;margin-bottom:10px}
+  .empty .et{font-size:13px;line-height:1.5}
+
+  .toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:30px;font-size:13px;font-weight:600;z-index:300;opacity:0;pointer-events:none;transition:.3s;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .info-banner{background:var(--blue-l);border:1px solid #bcd5e8;border-radius:14px;padding:12px 14px;font-size:12px;color:var(--blue);line-height:1.5;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HERD -->
+  <div class="screen active" id="s-herd">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div><h2 data-i="herd_title">Моё стадо</h2><div class="sub" data-i="herd_sub">Менің малым</div></div>
+        <div class="lang-toggle">
+          <button class="lang-btn" onclick="setLang('kz')" id="lb-kz">KZ</button>
+          <button class="lang-btn on" onclick="setLang('ru')" id="lb-ru">RU</button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="n" id="st-total">0</div><div class="l" data-i="st_total">всего голов</div></div>
+        <div class="stat"><div class="n" id="st-krs">0</div><div class="l" data-i="st_krs">КРС</div></div>
+        <div class="stat"><div class="n" id="st-due">0</div><div class="l" data-i="st_due">скоро уход</div></div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="seg" id="herd-seg">
+        <button class="on" onclick="filterHerd('all',this)" data-i="f_all">Все</button>
+        <button onclick="filterHerd('krs',this)" data-i="f_krs">КРС</button>
+        <button onclick="filterHerd('mrs',this)" data-i="f_mrs">Овцы</button>
+        <button onclick="filterHerd('horse',this)" data-i="f_horse">Лошади</button>
+        <button onclick="filterHerd('other',this)" data-i="f_other">Другое</button>
+      </div>
+      <div id="herd-list"></div>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="screen" id="s-detail">
+    <div class="detail-hero">
+      <div class="hero-top">
+        <button class="icon-btn" onclick="go('herd')">←</button>
+        <button class="icon-btn" onclick="editAnimal()">✎</button>
+      </div>
+      <div class="big-avatar" id="d-avatar">🐄</div>
+      <div class="d-name" id="d-name">—</div>
+      <div class="d-tag" id="d-tag">—</div>
+    </div>
+    <div class="d-section">
+      <div class="d-title"><span data-i="d_params">Параметры</span></div>
+      <div class="d-grid" id="d-grid"></div>
+      <div class="d-title"><span data-i="d_history">События и уход</span><span class="add-link" onclick="openEvent()">+ <span data-i="d_addevent">добавить</span></span></div>
+      <div id="d-timeline"></div>
+    </div>
+  </div>
+
+  <!-- CARE -->
+  <div class="screen" id="s-care">
+    <div class="topbar sand">
+      <div class="topbar-row"><div><h2 data-i="care_title">Календарь ухода</h2><div class="sub" style="color:var(--muted)" data-i="care_sub">Күтім күнтізбесі</div></div></div>
+    </div>
+    <div class="body" id="care-body"></div>
+  </div>
+
+  <!-- CALC -->
+  <div class="screen" id="s-calc">
+    <div class="topbar sand"><h2 data-i="calc_title">Калькулятор кормов</h2><div class="sub" style="color:var(--muted)" data-i="calc_sub">на зимовку</div></div>
+    <div class="body">
+      <div class="calc-field">
+        <label data-i="calc_type">Тип животного</label>
+        <div class="seg-mini">
+          <button class="on" onclick="setCalcType('krs',this)" data-i="calc_krs">КРС</button>
+          <button onclick="setCalcType('mrs',this)" data-i="calc_mrs">Овцы</button>
+        </div>
+      </div>
+      <div class="calc-field"><label><span data-i="calc_heads">Голов</span>: <span id="cv-heads" class="calc-val" style="min-width:auto">20</span></label>
+        <div class="calc-row"><input type="range" id="c-heads" min="1" max="300" value="20" oninput="calc()"></div></div>
+      <div class="calc-field"><label data-i="calc_days">Стойловый период (дней)</label>
+        <div class="calc-row"><input type="range" id="c-days" min="90" max="200" value="170" oninput="calc()"><span class="calc-val" id="cv-days">170</span></div></div>
+      <div class="calc-field"><label data-i="calc_hay">Цена сена (₸/тонна)</label>
+        <div class="calc-row"><input type="range" id="c-hay" min="20000" max="45000" step="1000" value="27000" oninput="calc()"><span class="calc-val" id="cv-hay">27 000</span></div></div>
+      <div class="calc-result">
+        <div class="crt" data-i="calc_need">Потребность на зиму</div>
+        <div class="crbig"><span id="cr-hay">—</span> <span style="font-size:16px;opacity:.7" data-i="calc_tonnes">тонн сена</span></div>
+        <div class="calc-line"><span data-i="calc_hay_cost">Сено</span><span class="cl-v" id="cr-haycost">—</span></div>
+        <div class="calc-line"><span data-i="calc_grain_cost">Зерно/концентраты</span><span class="cl-v" id="cr-grain">—</span></div>
+        <div class="calc-line green"><span data-i="calc_total">Итого корма</span><span class="cl-v" id="cr-total">—</span></div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5" data-i="calc_note">* Нормы: КРС 15 кг сена + 3 кг зерна/день, овца 2.5 кг + 0.3 кг. Цены Павлодарской обл. 2026.</p>
+    </div>
+  </div>
+
+  <!-- MORE -->
+  <div class="screen" id="s-more">
+    <div class="topbar sand"><h2 data-i="more_title">Дополнительно</h2><div class="sub" style="color:var(--muted)" data-i="more_sub">Тағы</div></div>
+    <div class="body">
+      <div class="info-banner" data-i="more_banner">💾 Все данные хранятся прямо на вашем телефоне. Делайте резервную копию, чтобы не потерять их.</div>
+      <div class="more-item" onclick="exportData()">
+        <div class="more-ic" style="background:var(--green-l)">⬇️</div>
+        <div class="more-body"><div class="mt" data-i="more_export">Сохранить резервную копию</div><div class="ms" data-i="more_export_s">скачать файл с данными</div></div>
+      </div>
+      <div class="more-item" onclick="document.getElementById('import-file').click()">
+        <div class="more-ic" style="background:var(--blue-l)">⬆️</div>
+        <div class="more-body"><div class="mt" data-i="more_import">Восстановить из копии</div><div class="ms" data-i="more_import_s">загрузить сохранённый файл</div></div>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+      <div class="more-item" onclick="shareApp()">
+        <div class="more-ic" style="background:var(--amber-l)">📲</div>
+        <div class="more-body"><div class="mt" data-i="more_install">Установить на телефон</div><div class="ms" data-i="more_install_s">как добавить на главный экран</div></div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="more-item" style="opacity:.7"><div class="more-ic" style="background:var(--blue-l)">📊</div><div class="more-body"><div class="mt" data-i="more_econ">Экономика и отчёты</div><div class="ms" data-i="more_econ_s">прибыль, затраты</div></div><span class="soon" data-i="soon">скоро</span></div>
+      <div class="more-item" style="opacity:.7"><div class="more-ic" style="background:var(--green-l)">🥛</div><div class="more-body"><div class="mt" data-i="more_milk">Надои и привес</div><div class="ms" data-i="more_milk_s">продуктивность</div></div><span class="soon" data-i="soon">скоро</span></div>
+      <div class="more-item" style="opacity:.7"><div class="more-ic" style="background:var(--red-l)">🔄</div><div class="more-body"><div class="mt" data-i="more_sync">Синхронизация с Tort Tulik</div><div class="ms" data-i="more_sync_s">гос-система</div></div><span class="soon" data-i="soon">скоро</span></div>
+      <div style="height:20px"></div>
+      <div class="more-item" onclick="resetAll()" style="border-color:var(--red-l)"><div class="more-ic" style="background:var(--red-l)">🗑️</div><div class="more-body"><div class="mt" style="color:var(--red)" data-i="more_reset">Очистить все данные</div><div class="ms" data-i="more_reset_s">удалить всё и начать заново</div></div></div>
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:18px" data-i="more_ver">Mal Esebi · пробная версия · v0.1</p>
+    </div>
+  </div>
+
+  <button class="fab" id="fab" onclick="openSheet()">+</button>
+
+  <div class="nav">
+    <button class="on" id="nav-herd" onclick="go('herd')"><span class="ic">🐄</span><span data-i="nav_herd">Стадо</span></button>
+    <button id="nav-care" onclick="go('care')"><span class="ic">📅</span><span data-i="nav_care">Уход</span></button>
+    <button id="nav-calc" onclick="go('calc')"><span class="ic">🧮</span><span data-i="nav_calc">Калькулятор</span></button>
+    <button id="nav-more" onclick="go('more')"><span class="ic">⋯</span><span data-i="nav_more">Ещё</span></button>
+  </div>
+</div>
+
+<!-- ADD/EDIT ANIMAL SHEET -->
+<div class="sheet-mask" id="sheet-mask" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3 id="sheet-title" data-i="add_title">Добавить животное</h3>
+    <div class="sh-sub" data-i="add_sub">Жаңа мал қосу</div>
+    <div class="field"><label data-i="add_type">Тип</label>
+      <div class="type-pick" id="type-pick">
+        <button class="on" onclick="pickType('krs',this)"><span class="te">🐄</span><span data-i="add_krs">КРС</span></button>
+        <button onclick="pickType('mrs',this)"><span class="te">🐑</span><span data-i="add_mrs">Овца</span></button>
+        <button onclick="pickType('horse',this)"><span class="te">🐎</span><span data-i="add_horse">Лошадь</span></button>
+        <button onclick="pickType('other',this)"><span class="te">🐐</span><span data-i="add_other">Другое</span></button>
+      </div>
+    </div>
+    <div class="field"><label data-i="add_tag">Номер бирки</label><input type="text" id="add-tag" placeholder="KZ-00-0000"></div>
+    <div class="field"><label data-i="add_name">Кличка / название</label><input type="text" id="add-name" placeholder="—"></div>
+    <div class="field-row">
+      <div class="field"><label data-i="add_sex">Пол</label><select id="add-sex"><option value="f" data-i="add_female">Самка</option><option value="m" data-i="add_male">Самец</option></select></div>
+      <div class="field"><label data-i="add_age">Возраст (лет)</label><input type="number" id="add-age" placeholder="2" min="0" step="0.5"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label data-i="add_weight">Вес (кг)</label><input type="number" id="add-weight" placeholder="0" min="0"></div>
+      <div class="field"><label data-i="add_status">Статус</label><select id="add-status">
+        <option value="ok" data-i="s_ok">Здоров</option><option value="preg" data-i="s_preg">Стельная/буаз</option>
+        <option value="due" data-i="s_due">Нужен уход</option><option value="sick" data-i="s_sick">Болеет</option></select></div>
+    </div>
+    <div class="field"><label data-i="add_breed">Порода</label><input type="text" id="add-breed" placeholder="—"></div>
+    <button class="save-btn" onclick="saveAnimal()" data-i="add_save">Сохранить</button>
+    <button class="ghost-btn" id="del-animal-btn" onclick="deleteAnimal()" style="display:none" data-i="add_delete">Удалить животное</button>
+  </div>
+</div>
+
+<!-- ADD EVENT SHEET -->
+<div class="sheet-mask" id="event-mask" onclick="if(event.target===this)closeEvent()">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3 data-i="ev_title">Событие / уход</h3>
+    <div class="sh-sub" data-i="ev_sub">прививка, осмотр, случка и т.д.</div>
+    <div class="field"><label data-i="ev_type">Тип события</label>
+      <select id="ev-type">
+        <option value="vac" data-i="next_vac">Вакцинация</option>
+        <option value="deworm" data-i="deworm">Дегельминтизация</option>
+        <option value="mating" data-i="mating">Случка</option>
+        <option value="calving" data-i="calving">Отёл/окот</option>
+        <option value="checkup" data-i="checkup">Осмотр</option>
+        <option value="treatment" data-i="treatment">Лечение</option>
+        <option value="weighing" data-i="weighing">Взвешивание</option>
+        <option value="other" data-i="ev_other">Другое</option>
+      </select>
+    </div>
+    <div class="field"><label data-i="ev_date">Дата</label><input type="date" id="ev-date"></div>
+    <div class="field"><label data-i="ev_note">Заметка (необязательно)</label><input type="text" id="ev-note" placeholder="—"></div>
+    <button class="save-btn" onclick="saveEvent()" data-i="ev_save">Добавить</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STORAGE (localStorage with in-memory fallback) ──────────────────────────
+const KEY='mal_esebi_data_v1';
+let memFallback=null;
+function loadData(){
+  try{ const r=localStorage.getItem(KEY); return r?JSON.parse(r):null; }
+  catch(e){ return memFallback; }
+}
+function saveData(){
+  try{ localStorage.setItem(KEY,JSON.stringify(animals)); }
+  catch(e){ memFallback=animals; }
+}
+
+// ─── i18n ────────────────────────────────────────────────────────────────────
+const T={
+ ru:{herd_title:'Моё стадо',herd_sub:'Менің малым',st_total:'всего голов',st_krs:'КРС',st_due:'скоро уход',
+  f_all:'Все',f_krs:'КРС',f_mrs:'Овцы',f_horse:'Лошади',f_other:'Другое',
+  d_params:'Параметры',d_history:'События и уход',d_addevent:'добавить',
+  care_title:'Календарь ухода',care_sub:'Күтім күнтізбесі',
+  calc_title:'Калькулятор кормов',calc_sub:'на зимовку',calc_type:'Тип животного',calc_krs:'КРС',calc_mrs:'Овцы',
+  calc_heads:'Голов',calc_days:'Стойловый период (дней)',calc_hay:'Цена сена (₸/тонна)',calc_need:'Потребность на зиму',
+  calc_tonnes:'тонн сена',calc_hay_cost:'Сено',calc_grain_cost:'Зерно/концентраты',calc_total:'Итого корма',
+  calc_note:'* Нормы: КРС 15 кг сена + 3 кг зерна/день, овца 2.5 кг + 0.3 кг. Цены Павлодарской обл. 2026.',
+  more_title:'Дополнительно',more_sub:'Тағы',more_banner:'💾 Все данные хранятся прямо на вашем телефоне. Делайте резервную копию, чтобы не потерять их.',
+  more_export:'Сохранить резервную копию',more_export_s:'скачать файл с данными',
+  more_import:'Восстановить из копии',more_import_s:'загрузить сохранённый файл',
+  more_install:'Установить на телефон',more_install_s:'как добавить на главный экран',
+  more_econ:'Экономика и отчёты',more_econ_s:'прибыль, затраты',more_milk:'Надои и привес',more_milk_s:'продуктивность',
+  more_sync:'Синхронизация с Tort Tulik',more_sync_s:'гос-система',
+  more_reset:'Очистить все данные',more_reset_s:'удалить всё и начать заново',more_ver:'Mal Esebi · пробная версия · v0.1',
+  soon:'скоро',nav_herd:'Стадо',nav_care:'Уход',nav_calc:'Калькулятор',nav_more:'Ещё',
+  add_title:'Добавить животное',edit_title:'Изменить животное',add_sub:'Жаңа мал қосу',add_type:'Тип',
+  add_krs:'КРС',add_mrs:'Овца',add_horse:'Лошадь',add_other:'Другое',add_tag:'Номер бирки',add_name:'Кличка / название',
+  add_sex:'Пол',add_female:'Самка',add_male:'Самец',add_age:'Возраст (лет)',add_weight:'Вес (кг)',add_status:'Статус',
+  add_breed:'Порода',add_save:'Сохранить',add_delete:'Удалить животное',
+  s_ok:'Здоров',s_preg:'Стельная/буаз',s_due:'Нужен уход',s_sick:'Болеет',
+  ev_title:'Событие / уход',ev_sub:'прививка, осмотр, случка и т.д.',ev_type:'Тип события',ev_date:'Дата',
+  ev_note:'Заметка (необязательно)',ev_save:'Добавить',ev_other:'Другое',
+  next_vac:'Вакцинация',deworm:'Дегельминтизация',mating:'Случка',calving:'Отёл/окот',checkup:'Осмотр',
+  treatment:'Лечение',weighing:'Взвешивание',
+  sex_f:'самка',sex_m:'самец',years:'лет',kg:'кг',healthy:'здоров',care_due:'нужен уход',pregnant:'стельная',sick:'болеет',
+  weight:'Вес',age:'Возраст',breed:'Порода',status:'Статус',
+  today:'Сегодня',tomorrow:'Завтра',this_week:'Эта неделя',this_month:'Этот месяц',later:'Позже',overdue:'Просрочено',
+  empty_t:'Нет животных. Нажмите «+», чтобы добавить первое.',empty_care:'Нет запланированных событий. Добавьте их в карточке животного.',
+  no_events:'Событий пока нет',saved:'Сохранено',deleted:'Удалено',ev_added:'Событие добавлено',done_msg:'Отмечено выполненным',
+  confirm_del:'Удалить это животное?',confirm_reset:'Удалить ВСЕ данные? Это нельзя отменить.',exported:'Копия сохранена',imported:'Данные восстановлены',import_err:'Ошибка файла',
+  install_ios:'iPhone: нажмите «Поделиться» → «На экран Домой».\nAndroid: меню браузера (⋮) → «Установить приложение».'},
+ kz:{herd_title:'Менің малым',herd_sub:'Моё стадо',st_total:'бас барлығы',st_krs:'ІҚМ',st_due:'күтім жақын',
+  f_all:'Барлығы',f_krs:'ІҚМ',f_mrs:'Қой',f_horse:'Жылқы',f_other:'Басқа',
+  d_params:'Параметрлер',d_history:'Оқиғалар мен күтім',d_addevent:'қосу',
+  care_title:'Күтім күнтізбесі',care_sub:'Календарь ухода',
+  calc_title:'Жем калькуляторы',calc_sub:'қысқа',calc_type:'Мал түрі',calc_krs:'ІҚМ',calc_mrs:'Қой',
+  calc_heads:'Бас саны',calc_days:'Қора кезеңі (күн)',calc_hay:'Шөп бағасы (₸/тонна)',calc_need:'Қысқа қажеттілік',
+  calc_tonnes:'тонна шөп',calc_hay_cost:'Шөп',calc_grain_cost:'Дән/жем',calc_total:'Жем барлығы',
+  calc_note:'* Норма: ІҚМ 15 кг шөп + 3 кг дән/күн, қой 2.5 кг + 0.3 кг. Павлодар обл. бағасы 2026.',
+  more_title:'Қосымша',more_sub:'Дополнительно',more_banner:'💾 Барлық деректер телефоныңызда сақталады. Жоғалтпау үшін сақтық көшірме жасаңыз.',
+  more_export:'Сақтық көшірме жасау',more_export_s:'деректер файлын жүктеу',
+  more_import:'Көшірмеден қалпына келтіру',more_import_s:'сақталған файлды жүктеу',
+  more_install:'Телефонға орнату',more_install_s:'басты экранға қалай қосу',
+  more_econ:'Экономика және есептер',more_econ_s:'пайда, шығын',more_milk:'Сауын және салмақ',more_milk_s:'өнімділік',
+  more_sync:'Tort Tulik синхрондау',more_sync_s:'мемлекеттік жүйе',
+  more_reset:'Барлық деректі өшіру',more_reset_s:'бәрін өшіріп қайта бастау',more_ver:'Mal Esebi · сынақ нұсқасы · v0.1',
+  soon:'жақында',nav_herd:'Мал',nav_care:'Күтім',nav_calc:'Калькулятор',nav_more:'Тағы',
+  add_title:'Жаңа мал қосу',edit_title:'Малды өзгерту',add_sub:'Добавить животное',add_type:'Түрі',
+  add_krs:'ІҚМ',add_mrs:'Қой',add_horse:'Жылқы',add_other:'Басқа',add_tag:'Бирка нөмірі',add_name:'Аты / атауы',
+  add_sex:'Жынысы',add_female:'Ұрғашы',add_male:'Еркек',add_age:'Жасы (жыл)',add_weight:'Салмағы (кг)',add_status:'Күйі',
+  add_breed:'Тұқымы',add_save:'Сақтау',add_delete:'Малды өшіру',
+  s_ok:'Сау',s_preg:'Буаз',s_due:'Күтім керек',s_sick:'Ауру',
+  ev_title:'Оқиға / күтім',ev_sub:'вакцина, тексеру, шағылыстыру',ev_type:'Оқиға түрі',ev_date:'Күні',
+  ev_note:'Ескертпе (міндетті емес)',ev_save:'Қосу',ev_other:'Басқа',
+  next_vac:'Вакцинация',deworm:'Құрт айдау',mating:'Шағылыстыру',calving:'Бұзаулау/төлдеу',checkup:'Тексеру',
+  treatment:'Емдеу',weighing:'Өлшеу',
+  sex_f:'ұрғашы',sex_m:'еркек',years:'жыл',kg:'кг',healthy:'сау',care_due:'күтім керек',pregnant:'буаз',sick:'ауру',
+  weight:'Салмағы',age:'Жасы',breed:'Тұқымы',status:'Күйі',
+  today:'Бүгін',tomorrow:'Ертең',this_week:'Осы апта',this_month:'Осы ай',later:'Кейін',overdue:'Мерзімі өткен',
+  empty_t:'Мал жоқ. Қосу үшін «+» басыңыз.',empty_care:'Жоспарланған оқиға жоқ. Мал картасында қосыңыз.',
+  no_events:'Оқиға әлі жоқ',saved:'Сақталды',deleted:'Өшірілді',ev_added:'Оқиға қосылды',done_msg:'Орындалды деп белгіленді',
+  confirm_del:'Бұл малды өшіру керек пе?',confirm_reset:'БАРЛЫҚ деректі өшіру керек пе? Қайтарылмайды.',exported:'Көшірме сақталды',imported:'Деректер қалпына келді',import_err:'Файл қатесі',
+  install_ios:'iPhone: «Бөлісу» → «Негізгі экранға».\nAndroid: браузер мәзірі (⋮) → «Қолданбаны орнату».'}
+};
+let lang='ru';
+
+const SEED=[
+ {id:1,type:'krs',name:'Зорька',tag:'KZ-14-0042',sex:'f',age:4,weight:420,breed:'Казахская белоголовая',status:'preg',
+  events:[{id:11,type:'mating',date:isoOffset(-148),note:''},{id:12,type:'calving',date:isoOffset(17),note:''},{id:13,type:'vac',date:isoOffset(40),note:''}]},
+ {id:2,type:'krs',name:'Майка',tag:'KZ-14-0043',sex:'f',age:3,weight:390,breed:'Казахская белоголовая',status:'due',
+  events:[{id:21,type:'vac',date:isoOffset(1),note:'ящур'}]},
+ {id:3,type:'krs',name:'Буян',tag:'KZ-14-0044',sex:'m',age:5,weight:680,breed:'Герефорд',status:'ok',events:[]},
+ {id:5,type:'mrs',name:'Отара №1',tag:'KZ-14-0101',sex:'f',age:3,weight:65,breed:'Эдильбаевская',status:'due',
+  events:[{id:51,type:'deworm',date:isoOffset(1),note:''}]},
+ {id:6,type:'mrs',name:'Отара №2',tag:'KZ-14-0102',sex:'f',age:2,weight:58,breed:'Эдильбаевская',status:'preg',
+  events:[{id:61,type:'calving',date:isoOffset(23),note:''}]},
+ {id:8,type:'horse',name:'Тұлпар',tag:'KZ-14-0201',sex:'m',age:6,weight:480,breed:'Казахская',status:'ok',
+  events:[{id:81,type:'vac',date:isoOffset(45),note:''}]},
+];
+function isoOffset(days){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
+
+let animals=loadData();
+if(!animals){animals=JSON.parse(JSON.stringify(SEED));saveData();}
+
+const EMO={krs:'🐄',mrs:'🐑',horse:'🐎',other:'🐐'};
+const EVEMO={vac:'💉',deworm:'💊',mating:'🐮',calving:'🍼',checkup:'🩺',treatment:'🏥',weighing:'⚖️',other:'📌'};
+
+// ─── HERD ─────────────────────────────────────────────────────────────────────
+let herdFilter='all';
+function isDueSoon(a){
+  const now=new Date();now.setHours(0,0,0,0);
+  return (a.events||[]).some(e=>{const d=new Date(e.date);const diff=(d-now)/86400000;return diff>=0&&diff<=7;});
+}
+function renderHerd(){
+  const list=document.getElementById('herd-list');
+  const items=animals.filter(a=>herdFilter==='all'||a.type===herdFilter);
+  if(!items.length){list.innerHTML=`<div class="empty"><div class="ee">🌾</div><div class="et">${T[lang].empty_t}</div></div>`;}
+  else list.innerHTML=items.map(a=>{
+    const stKey=a.status==='ok'?'healthy':a.status==='due'?'care_due':a.status==='preg'?'pregnant':'sick';
+    const stCls=a.status==='ok'?'ok':a.status==='due'?'due':a.status==='preg'?'preg':'sick';
+    const av=a.type==='mrs'?'mrs':a.type==='horse'?'horse':a.type==='other'?'other':'';
+    return `<div class="animal" onclick="openDetail(${a.id})">
+      <div class="avatar ${av}">${EMO[a.type]||'🐄'}</div>
+      <div class="animal-info">
+        <div class="tag">${esc(a.tag||'—')}</div>
+        <div class="name">${esc(a.name||'—')}</div>
+        <div class="meta"><span>${a.sex==='f'?T[lang].sex_f:T[lang].sex_m}</span><span>· ${a.age||0} ${T[lang].years}</span>${a.weight?`<span>· ${a.weight} ${T[lang].kg}</span>`:''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="chip ${stCls}">${T[lang][stKey]}</span><span class="arrow">›</span></div>
+    </div>`;}).join('');
+  document.getElementById('st-total').textContent=animals.length;
+  document.getElementById('st-krs').textContent=animals.filter(a=>a.type==='krs').length;
+  document.getElementById('st-due').textContent=animals.filter(a=>isDueSoon(a)||a.status==='due').length;
+}
+function filterHerd(f,el){herdFilter=f;document.querySelectorAll('#herd-seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderHerd();}
+
+// ─── DETAIL ───────────────────────────────────────────────────────────────────
+let currentId=null;
+function openDetail(id){
+  currentId=id;const a=animals.find(x=>x.id===id);if(!a)return;
+  document.getElementById('d-avatar').textContent=EMO[a.type]||'🐄';
+  document.getElementById('d-name').textContent=a.name||'—';
+  document.getElementById('d-tag').textContent=a.tag||'—';
+  const stKey=a.status==='ok'?'healthy':a.status==='due'?'care_due':a.status==='preg'?'pregnant':'sick';
+  document.getElementById('d-grid').innerHTML=`
+    <div class="d-cell"><div class="k">${T[lang].weight}</div><div class="v">${a.weight||0} ${T[lang].kg}</div></div>
+    <div class="d-cell"><div class="k">${T[lang].age}</div><div class="v">${a.age||0} ${T[lang].years}</div></div>
+    <div class="d-cell" style="grid-column:span 2"><div class="k">${T[lang].breed}</div><div class="v" style="font-size:14px">${esc(a.breed||'—')}</div></div>
+    <div class="d-cell" style="grid-column:span 2"><div class="k">${T[lang].status}</div><div class="v" style="font-size:14px">${T[lang][stKey]}</div></div>`;
+  renderTimeline(a);
+  go('detail');
+}
+function renderTimeline(a){
+  const tl=document.getElementById('d-timeline');
+  const evs=[...(a.events||[])].sort((x,y)=>new Date(y.date)-new Date(x.date));
+  if(!evs.length){tl.innerHTML=`<div class="empty" style="padding:24px"><div class="et">${T[lang].no_events}</div></div>`;return;}
+  const now=new Date();now.setHours(0,0,0,0);
+  tl.innerHTML=evs.map(e=>{
+    const d=new Date(e.date);const future=d>=now;
+    return `<div class="timeline-item">
+      <div class="ti-dot ${future?'due':'done'}">${EVEMO[e.type]||'📌'}</div>
+      <div class="ti-body"><div class="t">${T[lang][e.type==='vac'?'next_vac':e.type]||e.type}${e.note?` · ${esc(e.note)}`:''}</div><div class="d">${fmtDate(e.date)}</div></div>
+      <button class="ti-del" onclick="delEvent(${e.id})">×</button>
+    </div>`;}).join('');
+}
+function delEvent(eid){const a=animals.find(x=>x.id===currentId);if(!a)return;a.events=a.events.filter(e=>e.id!==eid);saveData();renderTimeline(a);renderHerd();toast(T[lang].deleted);}
+
+// ─── CARE ─────────────────────────────────────────────────────────────────────
+function renderCare(){
+  const now=new Date();now.setHours(0,0,0,0);
+  let all=[];
+  animals.forEach(a=>(a.events||[]).forEach(e=>{const d=new Date(e.date);if(d>=now)all.push({a,e,d});}));
+  all.sort((x,y)=>x.d-y.d);
+  const cb=document.getElementById('care-body');
+  if(!all.length){cb.innerHTML=`<div class="empty"><div class="ee">📅</div><div class="et">${T[lang].empty_care}</div></div>`;return;}
+  const buckets={today:[],tomorrow:[],this_week:[],this_month:[],later:[]};
+  all.forEach(it=>{const diff=(it.d-now)/86400000;
+    if(diff===0)buckets.today.push(it);else if(diff===1)buckets.tomorrow.push(it);
+    else if(diff<=7)buckets.this_week.push(it);else if(diff<=31)buckets.this_month.push(it);else buckets.later.push(it);});
+  const colors={today:'var(--red)',tomorrow:'var(--amber)',this_week:'var(--green)',this_month:'var(--blue)',later:'var(--muted)'};
+  let html='';
+  Object.keys(buckets).forEach(k=>{if(!buckets[k].length)return;
+    html+=`<div class="care-group"><div class="care-label"><span class="dot" style="background:${colors[k]}"></span>${T[lang][k]}</div>`;
+    buckets[k].forEach(it=>{const urgent=k==='today'||k==='tomorrow';const dd=new Date(it.e.date);
+      html+=`<div class="care-card ${urgent?'urgent':''}">
+        <div class="care-ic ${urgent?'urgent':''}">${EVEMO[it.e.type]||'📌'}</div>
+        <div class="care-cbody"><div class="ct">${T[lang][it.e.type==='vac'?'next_vac':it.e.type]||it.e.type}</div><div class="cs">${esc(it.a.name)} · ${esc(it.a.tag||'')}${it.e.note?' · '+esc(it.e.note):''}</div></div>
+        <div class="care-date"><div class="cd">${dd.getDate()}</div><div class="cm">${monthShort(dd)}</div></div>
+        <button class="care-done-btn" onclick="markDone(${it.a.id},${it.e.id})">✓</button>
+      </div>`;});
+    html+='</div>';});
+  cb.innerHTML=html;
+}
+function markDone(aid,eid){const a=animals.find(x=>x.id===aid);if(!a)return;a.events=a.events.filter(e=>e.id!==eid);if(a.status==='due')a.status='ok';saveData();renderCare();renderHerd();toast(T[lang].done_msg);}
+
+// ─── CALC ─────────────────────────────────────────────────────────────────────
+let calcType='krs';
+function setCalcType(t,el){calcType=t;el.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');calc();}
+function calc(){
+  const heads=+v('c-heads'),days=+v('c-days'),hayPrice=+v('c-hay');
+  document.getElementById('cv-heads').textContent=heads;
+  document.getElementById('cv-days').textContent=days;
+  document.getElementById('cv-hay').textContent=hayPrice.toLocaleString('ru-RU');
+  const hayDay=calcType==='krs'?15:2.5,grainDay=calcType==='krs'?3:0.3,grainPrice=90000;
+  const hayT=heads*hayDay*days/1000,grainT=heads*grainDay*days/1000;
+  const hayCost=hayT*hayPrice,grainCost=grainT*grainPrice;
+  document.getElementById('cr-hay').textContent=hayT.toFixed(1);
+  document.getElementById('cr-haycost').textContent=Math.round(hayCost).toLocaleString('ru-RU')+' ₸';
+  document.getElementById('cr-grain').textContent=Math.round(grainCost).toLocaleString('ru-RU')+' ₸';
+  document.getElementById('cr-total').textContent=Math.round(hayCost+grainCost).toLocaleString('ru-RU')+' ₸';
+}
+
+// ─── ADD/EDIT ANIMAL ──────────────────────────────────────────────────────────
+let newType='krs',editId=null;
+function openSheet(){editId=null;newType='krs';
+  document.getElementById('sheet-title').textContent=T[lang].add_title;
+  document.querySelectorAll('#type-pick button').forEach((b,i)=>b.classList.toggle('on',i===0));
+  ['add-tag','add-name','add-age','add-weight','add-breed'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('add-sex').selectedIndex=0;document.getElementById('add-status').selectedIndex=0;
+  document.getElementById('del-animal-btn').style.display='none';
+  document.getElementById('sheet-mask').classList.add('show');}
+function editAnimal(){const a=animals.find(x=>x.id===currentId);if(!a)return;editId=a.id;newType=a.type;
+  document.getElementById('sheet-title').textContent=T[lang].edit_title;
+  const order={krs:0,mrs:1,horse:2,other:3};
+  document.querySelectorAll('#type-pick button').forEach((b,i)=>b.classList.toggle('on',i===order[a.type]));
+  document.getElementById('add-tag').value=a.tag||'';document.getElementById('add-name').value=a.name||'';
+  document.getElementById('add-age').value=a.age||'';document.getElementById('add-weight').value=a.weight||'';
+  document.getElementById('add-breed').value=a.breed||'';
+  document.getElementById('add-sex').value=a.sex||'f';document.getElementById('add-status').value=a.status||'ok';
+  document.getElementById('del-animal-btn').style.display='block';
+  document.getElementById('sheet-mask').classList.add('show');}
+function closeSheet(){document.getElementById('sheet-mask').classList.remove('show');}
+function pickType(t,el){newType=t;document.querySelectorAll('#type-pick button').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
+function saveAnimal(){
+  const data={type:newType,tag:v('add-tag')||'KZ-14-'+Math.floor(1000+Math.random()*9000),
+    name:v('add-name')||(newType==='krs'?'Бұзау':newType==='mrs'?'Қозы':newType==='horse'?'Құлын':'—'),
+    sex:document.getElementById('add-sex').value,age:+v('add-age')||0,weight:+v('add-weight')||0,
+    breed:v('add-breed')||'—',status:document.getElementById('add-status').value};
+  if(editId){const a=animals.find(x=>x.id===editId);Object.assign(a,data);}
+  else{animals.unshift({id:Date.now(),...data,events:[]});herdFilter='all';document.querySelectorAll('#herd-seg button').forEach((b,i)=>b.classList.toggle('on',i===0));}
+  saveData();closeSheet();
+  if(editId){openDetail(editId);}else{go('herd');}
+  renderHerd();toast(T[lang].saved);
+}
+function deleteAnimal(){if(!confirm(T[lang].confirm_del))return;animals=animals.filter(a=>a.id!==editId);saveData();closeSheet();go('herd');renderHerd();toast(T[lang].deleted);}
+
+// ─── EVENT ────────────────────────────────────────────────────────────────────
+function openEvent(){document.getElementById('ev-date').value=isoOffset(7);document.getElementById('ev-note').value='';document.getElementById('ev-type').selectedIndex=0;document.getElementById('event-mask').classList.add('show');}
+function closeEvent(){document.getElementById('event-mask').classList.remove('show');}
+function saveEvent(){const a=animals.find(x=>x.id===currentId);if(!a)return;
+  if(!a.events)a.events=[];
+  a.events.push({id:Date.now(),type:document.getElementById('ev-type').value,date:document.getElementById('ev-date').value||isoOffset(0),note:v('ev-note')});
+  saveData();closeEvent();renderTimeline(a);renderHerd();toast(T[lang].ev_added);}
+
+// ─── BACKUP ───────────────────────────────────────────────────────────────────
+function exportData(){
+  const blob=new Blob([JSON.stringify(animals,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='mal_esebi_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  URL.revokeObjectURL(url);toast(T[lang].exported);
+}
+function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){animals=d;saveData();renderHerd();renderCare();go('herd');toast(T[lang].imported);}else throw 0;}catch(e){toast(T[lang].import_err);}};
+  r.readAsText(f);ev.target.value='';}
+function resetAll(){if(!confirm(T[lang].confirm_reset))return;animals=[];saveData();renderHerd();renderCare();go('herd');toast(T[lang].deleted);}
+function shareApp(){alert(T[lang].install_ios);}
+
+// ─── NAV / UTIL ───────────────────────────────────────────────────────────────
+function go(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-'+screen).classList.add('active');window.scrollTo(0,0);
+  const m={herd:'nav-herd',care:'nav-care',calc:'nav-calc',more:'nav-more',detail:'nav-herd'};
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+  if(m[screen])document.getElementById(m[screen]).classList.add('on');
+  document.getElementById('fab').style.display=screen==='herd'?'flex':'none';
+  if(screen==='care')renderCare();
+}
+function v(id){return document.getElementById(id).value.trim();}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString(lang==='kz'?'kk-KZ':'ru-RU',{day:'2-digit',month:'long',year:'numeric'});}
+function monthShort(d){const ru=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];const kz=['қаң','ақп','нау','сәу','мам','мау','шіл','там','қыр','қаз','қар','жел'];return (lang==='kz'?kz:ru)[d.getMonth()];}
+let toastTimer;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800);}
+
+function setLang(l){lang=l;
+  document.getElementById('lb-kz').classList.toggle('on',l==='kz');
+  document.getElementById('lb-ru').classList.toggle('on',l==='ru');
+  document.documentElement.lang=l;
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(T[l][k])el.textContent=T[l][k];});
+  // selects with data-i options
+  document.querySelectorAll('select option[data-i]').forEach(o=>{const k=o.getAttribute('data-i');if(T[l][k])o.textContent=T[l][k];});
+  renderHerd();renderCare();calc();
+  if(document.getElementById('s-detail').classList.contains('active')&&currentId)openDetail(currentId);
+}
+
+// init
+renderHerd();calc();
+</script>
+</body>
+</html>
